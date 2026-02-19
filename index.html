@@ -1,0 +1,753 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GhostLink - Send a message that disappears after it's read</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #000;
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated background particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            from {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            to {
+                transform: translateY(-10vh) translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Logo Section */
+        .logo-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .ghost-container {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 0 auto 30px;
+            animation: ghostFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes ghostFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .ghost-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 40px rgba(255, 100, 50, 0.5));
+        }
+
+        h1 {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #fff 0%, #a0a0a0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -1px;
+        }
+
+        .tagline {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 10px;
+            font-weight: 400;
+        }
+
+        .features {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            flex-wrap: wrap;
+        }
+
+        .features span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .features span::before {
+            content: '•';
+            color: #ff6b35;
+            font-weight: bold;
+        }
+
+        /* Form Section */
+        .form-container {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            color: #fff;
+            font-size: 15px;
+            resize: vertical;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: rgba(255, 107, 53, 0.5);
+            background: rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0 20px rgba(255, 107, 53, 0.1);
+        }
+
+        textarea::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .encrypted-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #10b981;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        .encrypted-badge::before {
+            content: '🔒';
+            font-size: 10px;
+        }
+
+        /* Options Grid */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .option-box {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .option-box:hover {
+            border-color: rgba(255, 107, 53, 0.3);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .option-box.active {
+            border-color: #ff6b35;
+            background: rgba(255, 107, 53, 0.1);
+        }
+
+        .option-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .option-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .toggle {
+            width: 36px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .option-box.active .toggle {
+            background: #ff6b35;
+        }
+
+        .option-box.active .toggle::after {
+            left: 18px;
+            background: #fff;
+        }
+
+        .option-desc {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            line-height: 1.4;
+        }
+
+        /* Subdomain Input */
+        .subdomain-group {
+            margin-bottom: 20px;
+        }
+
+        .subdomain-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .subdomain-input-wrapper:focus-within {
+            border-color: rgba(255, 107, 53, 0.5);
+            box-shadow: 0 0 20px rgba(255, 107, 53, 0.1);
+        }
+
+        .subdomain-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 15px;
+            color: #fff;
+            font-size: 15px;
+            outline: none;
+        }
+
+        .subdomain-suffix {
+            padding: 15px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Expiry Section */
+        .expiry-section {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .expiry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .expiry-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .expiry-value {
+            font-size: 14px;
+            color: #ff6b35;
+            font-weight: 600;
+        }
+
+        .expiry-slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .expiry-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #ff6b35;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+            transition: all 0.2s ease;
+        }
+
+        .expiry-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 20px rgba(255, 107, 53, 0.8);
+        }
+
+        .expiry-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Submit Button */
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(255, 107, 53, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(255, 255, 255, 0.1) 50%,
+                transparent 70%
+            );
+            transform: rotate(30deg);
+            transition: all 0.6s ease;
+        }
+
+        .submit-btn:hover::after {
+            left: 100%;
+        }
+
+        /* Generated Link Display */
+        .result-container {
+            display: none;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .result-link {
+            display: flex;
+            gap: 10px;
+        }
+
+        .link-display {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 14px;
+            color: #10b981;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            padding: 12px 20px;
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            color: #10b981;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .copy-btn:hover {
+            background: rgba(16, 185, 129, 0.3);
+        }
+
+        .copy-btn.copied {
+            background: #10b981;
+            color: #fff;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: #ff6b35;
+        }
+
+        /* Password Input (hidden by default) */
+        .password-input {
+            display: none;
+            margin-top: 10px;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 100px;
+            }
+        }
+
+        .password-input.show {
+            display: block;
+        }
+
+        .password-field {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .password-field:focus {
+            border-color: rgba(255, 107, 53, 0.5);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 32px;
+            }
+            
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .ghost-container {
+                width: 200px;
+                height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background Particles -->
+    <div class="particles" id="particles"></div>
+
+    <div class="container">
+        <!-- Logo Section -->
+        <div class="logo-section">
+            <div class="ghost-container">
+                <img src="https://i.postimg.cc/ydTd0JH6/8964c7973ab64bc94a48cb32dec2d4a608b9b8c0ff9a8cc953b4fe5feb131aef.jpg" alt="GhostLink" class="ghost-img">
+            </div>
+            <h1>GhostLink</h1>
+            <p class="tagline">Send a message that disappears after it's read.</p>
+            <div class="features">
+                <span>No Accounts</span>
+                <span>No Records</span>
+                <span>No Trace</span>
+            </div>
+        </div>
+
+        <!-- Form Section -->
+        <div class="form-container">
+            <div class="input-group">
+                <label>Your Secret Message</label>
+                <textarea id="message" placeholder="Type your confidential message here..."></textarea>
+                <span class="encrypted-badge">End-to-end encrypted</span>
+            </div>
+
+            <div class="options-grid">
+                <div class="option-box" id="passwordToggle">
+                    <div class="option-header">
+                        <span class="option-title">Add password</span>
+                        <div class="toggle"></div>
+                    </div>
+                    <div class="option-desc">Extra layer of security</div>
+                    <div class="password-input" id="passwordInput">
+                        <input type="password" class="password-field" placeholder="Enter password" id="passwordField">
+                    </div>
+                </div>
+
+                <div class="option-box" id="notifyToggle">
+                    <div class="option-header">
+                        <span class="option-title">Notify when opened</span>
+                        <div class="toggle"></div>
+                    </div>
+                    <div class="option-desc">Anonymous confirmation only</div>
+                </div>
+            </div>
+
+            <div class="subdomain-group">
+                <label>Custom subdomain (optional)</label>
+                <div class="subdomain-input-wrapper">
+                    <input type="text" class="subdomain-input" placeholder="your-custom-link" id="subdomain">
+                    <span class="subdomain-suffix">.ghostlink.io</span>
+                </div>
+            </div>
+
+            <div class="expiry-section">
+                <div class="expiry-header">
+                    <span class="expiry-title">Auto-delete if unopened</span>
+                    <span class="expiry-value" id="expiryValue">24 hours</span>
+                </div>
+                <input type="range" class="expiry-slider" id="expirySlider" min="1" max="4" value="3" step="1">
+                <div class="expiry-labels">
+                    <span>1h</span>
+                    <span>6h</span>
+                    <span>24h</span>
+                    <span>7d</span>
+                </div>
+            </div>
+
+            <button class="submit-btn" id="createLink">Create Secure Link</button>
+
+            <!-- Result Display -->
+            <div class="result-container" id="resultContainer">
+                <div class="result-label">Your secure link (copy and share)</div>
+                <div class="result-link">
+                    <div class="link-display" id="linkDisplay">https://secret.ghostlink.io/x7k9m2</div>
+                    <button class="copy-btn" id="copyBtn">Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="footer-links">
+                <a href="#">About</a>
+                <a href="#">Security</a>
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+            </div>
+            <p>No recipient identity stored • Messages encrypted in transit and at rest</p>
+        </div>
+    </div>
+
+    <script>
+        // Create background particles
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 50; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 20 + 's';
+            particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+            particlesContainer.appendChild(particle);
+        }
+
+        // Toggle switches
+        const passwordToggle = document.getElementById('passwordToggle');
+        const notifyToggle = document.getElementById('notifyToggle');
+        const passwordInput = document.getElementById('passwordInput');
+
+        passwordToggle.addEventListener('click', function(e) {
+            if (e.target.closest('.password-input')) return;
+            this.classList.toggle('active');
+            passwordInput.classList.toggle('show');
+        });
+
+        notifyToggle.addEventListener('click', function() {
+            this.classList.toggle('active');
+        });
+
+        // Expiry slider
+        const expirySlider = document.getElementById('expirySlider');
+        const expiryValue = document.getElementById('expiryValue');
+        const expiryOptions = ['1 hour', '6 hours', '24 hours', '7 days'];
+
+        expirySlider.addEventListener('input', function() {
+            expiryValue.textContent = expiryOptions[this.value - 1];
+        });
+
+        // Create link button
+        const createLinkBtn = document.getElementById('createLink');
+        const resultContainer = document.getElementById('resultContainer');
+        const linkDisplay = document.getElementById('linkDisplay');
+        const subdomain = document.getElementById('subdomain');
+
+        createLinkBtn.addEventListener('click', function() {
+            const message = document.getElementById('message').value;
+            if (!message.trim()) {
+                alert('Please enter a message first');
+                return;
+            }
+
+            // Generate random string
+            const randomStr = Math.random().toString(36).substring(2, 8);
+            const customSub = subdomain.value.trim();
+            const finalPath = customSub || randomStr;
+            
+            linkDisplay.textContent = `https://${finalPath}.ghostlink.io/${randomStr}`;
+            resultContainer.style.display = 'block';
+            
+            // Scroll to result
+            resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+
+        // Copy button
+        const copyBtn = document.getElementById('copyBtn');
+        copyBtn.addEventListener('click', function() {
+            const text = linkDisplay.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                this.textContent = 'Copied!';
+                this.classList.add('copied');
+                setTimeout(() => {
+                    this.textContent = 'Copy';
+                    this.classList.remove('copied');
+                }, 2000);
+            });
+        });
+
+        // Subdomain validation (only allow alphanumeric and hyphens)
+        subdomain.addEventListener('input', function() {
+            this.value = this.value.replace(/[^a-zA-Z0-9-]/g, '').toLowerCase();
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
