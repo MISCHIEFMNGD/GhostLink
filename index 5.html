@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GhostLink</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            min-height: 100vh;
+            color: #fff;
+            padding: 40px 20px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        .logo-section { text-align: center; margin-bottom: 40px; }
+        .ghost-container {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .ghost-img { width: 100%; height: 100%; object-fit: contain; }
+        h1 { font-size: 36px; margin-bottom: 10px; }
+        .tagline { color: rgba(255,255,255,0.6); margin-bottom: 10px; }
+        .form-container {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 24px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 12px;
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+        .option-box {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .option-box.active { border-color: #ff6b35; }
+        .toggle {
+            width: 40px;
+            height: 20px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            position: relative;
+        }
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: 0.3s;
+        }
+        .option-box.active .toggle { background: #ff6b35; }
+        .option-box.active .toggle::after { left: 22px; }
+        .password-input { display: none; margin-top: 10px; }
+        .password-input.show { display: block; }
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: #fff;
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: #ff6b35;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 16px;
+        }
+        .result-container {
+            display: none;
+            margin-top: 20px;
+            padding: 16px;
+            background: rgba(16,185,129,0.1);
+            border: 1px solid rgba(16,185,129,0.3);
+            border-radius: 8px;
+        }
+        .link-display {
+            background: rgba(0,0,0,0.3);
+            padding: 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+            word-break: break-all;
+            margin-bottom: 10px;
+            color: #10b981;
+        }
+        .copy-btn {
+            padding: 8px 16px;
+            background: rgba(16,185,129,0.2);
+            border: 1px solid rgba(16,185,129,0.3);
+            border-radius: 6px;
+            color: #10b981;
+            cursor: pointer;
+        }
+        .view-page { display: none; text-align: center; padding: 40px 20px; }
+        .view-page.show { display: block; }
+        .message-box {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px 0;
+            font-size: 18px;
+        }
+        .burn-notice {
+            color: #ff6b35;
+            margin-top: 20px;
+        }
+        .error { color: #ef4444; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <!-- CREATE PAGE -->
+    <div class="container" id="createPage">
+        <div class="logo-section">
+            <div class="ghost-container">
+                <img src="https://i.postimg.cc/ydTd0JH6/8964c7973ab64bc94a48cb32dec2d4a608b9b8c0ff9a8cc953b4fe5feb131aef.jpg" class="ghost-img">
+            </div>
+            <h1>GhostLink</h1>
+            <p class="tagline">Send a message that disappears after it's read</p>
+        </div>
+
+        <div class="form-container">
+            <textarea id="message" placeholder="Type your secret message..."></textarea>
+            
+            <div class="option-box" id="passwordToggle">
+                <span>Add password protection</span>
+                <div class="toggle"></div>
+            </div>
+            <div class="password-input" id="passwordInput">
+                <input type="password" id="passwordField" placeholder="Enter password">
+            </div>
+
+            <button class="submit-btn" onclick="createLink()">Create Secure Link</button>
+
+            <div class="result-container" id="resultContainer">
+                <div class="link-display" id="linkDisplay"></div>
+                <button class="copy-btn" onclick="copyLink()">Copy Link</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW PAGE -->
+    <div class="view-page" id="viewPage">
+        <div class="ghost-container">
+            <img src="https://i.postimg.cc/ydTd0JH6/8964c7973ab64bc94a48cb32dec2d4a608b9b8c0ff9a8cc953b4fe5feb131aef.jpg" class="ghost-img">
+        </div>
+        <h1>Secret Message</h1>
+        <div id="passwordPrompt" style="display:none; margin:20px 0;">
+            <input type="password" id="viewPassword" placeholder="Enter password" style="padding:12px; width:200px;">
+            <button class="submit-btn" onclick="unlockMessage()" style="width:auto; margin-left:10px;">Unlock</button>
+        </div>
+        <div class="message-box" id="messageBox" style="display:none;"></div>
+        <div class="burn-notice" id="burnNotice" style="display:none;">🔥 This message has been deleted</div>
+        <div class="error" id="errorMsg"></div>
+    </div>
+
+    <script>
+        // ============================================
+        // REPLACE THIS WITH YOUR FIREBASE CONFIG
+        // ============================================
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY_HERE",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "YOUR_APP_ID"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Check if viewing message
+        const urlParams = new URLSearchParams(window.location.search);
+        const msgId = urlParams.get('id');
+
+        if (msgId) {
+            document.getElementById('createPage').style.display = 'none';
+            document.getElementById('viewPage').classList.add('show');
+            loadMessage(msgId);
+        }
+
+        // Toggle password
+        document.getElementById('passwordToggle').onclick = function() {
+            this.classList.toggle('active');
+            document.getElementById('passwordInput').classList.toggle('show');
+        };
+
+        async function createLink() {
+            const message = document.getElementById('message').value.trim();
+            if (!message) return alert('Enter a message first');
+
+            const btn = document.querySelector('.submit-btn');
+            btn.textContent = 'Creating...';
+            btn.disabled = true;
+
+            const id = Math.random().toString(36).substring(2, 15);
+            const key = Math.random().toString(36).substring(2, 34);
+            const encrypted = CryptoJS.AES.encrypt(message, key).toString();
+            
+            const hasPassword = document.getElementById('passwordToggle').classList.contains('active');
+            const password = hasPassword ? document.getElementById('passwordField').value : null;
+            const passwordHash = password ? CryptoJS.SHA256(password).toString() : null;
+
+            await db.ref('messages/' + id).set({
+                text: encrypted,
+                passwordHash: passwordHash,
+                created: Date.now(),
+                expires: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+            });
+
+            // THIS IS THE FIX - Uses your actual Vercel URL
+            const baseUrl = window.location.origin + window.location.pathname;
+            const link = `${baseUrl}?id=${id}#${key}`;
+            
+            document.getElementById('linkDisplay').textContent = link;
+            document.getElementById('resultContainer').style.display = 'block';
+            
+            btn.textContent = 'Create Secure Link';
+            btn.disabled = false;
+        }
+
+        function copyLink() {
+            navigator.clipboard.writeText(document.getElementById('linkDisplay').textContent);
+            event.target.textContent = 'Copied!';
+            setTimeout(() => event.target.textContent = 'Copy Link', 2000);
+        }
+
+        async function loadMessage(id) {
+            const key = window.location.hash.substring(1);
+            if (!key) return showError('Invalid link');
+
+            const snap = await db.ref('messages/' + id).once('value');
+            const data = snap.val();
+
+            if (!data) return showError('Message already viewed or expired');
+            if (Date.now() > data.expires) {
+                await db.ref('messages/' + id).remove();
+                return showError('Message expired');
+            }
+
+            if (data.passwordHash) {
+                document.getElementById('passwordPrompt').style.display = 'block';
+                window.unlockMessage = async function() {
+                    const input = document.getElementById('viewPassword').value;
+                    if (CryptoJS.SHA256(input).toString() !== data.passwordHash) {
+                        return alert('Wrong password');
+                    }
+                    showMessage(data, id, key);
+                };
+            } else {
+                showMessage(data, id, key);
+            }
+        }
+
+        async function showMessage(data, id, key) {
+            document.getElementById('passwordPrompt').style.display = 'none';
+            const decrypted = CryptoJS.AES.decrypt(data.text, key).toString(CryptoJS.enc.Utf8);
+            
+            document.getElementById('messageBox').textContent = decrypted;
+            document.getElementById('messageBox').style.display = 'block';
+            document.getElementById('burnNotice').style.display = 'block';
+            
+            await db.ref('messages/' + id).remove(); // Burn after reading
+        }
+
+        function showError(msg) {
+            document.getElementById('errorMsg').textContent = msg;
+        }
+    </script>
+</body>
+</html>
